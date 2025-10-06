@@ -1,0 +1,11 @@
+{
+    "extensions.ignoreRecommendations": true,
+    "C_Cpp.default.configurationProvider": "particle.particle-vscode-core",
+    "files.associations": {
+        "*.ino": "cpp"
+    },
+    "particle.targetDevice": "gate_boron",
+    "particle.targetPlatform": "boron",
+    "particle.firmwareVersion": "6.3.3",
+    "particle.debugWarningShown": true
+}

@@ -2,7 +2,14 @@
 
 This firmware project was created using [Particle Developer Tools](https://www.particle.io/developer-tools/) and is compatible with all [Particle Devices](https://www.particle.io/devices/).
 
-Feel free to replace this README.md file with your own content, or keep it for reference.
+This software is intended to provide the following functionality:
+1. Send a signal to a gate opener board via a relay (step up to gate opener voltage of 12-24v)
+2. Hold open the gate
+3. Read back the position of the gate from a board output (step down via relay to particle voltage of 3.3v)
+4. Read and flag any hard errors from the gate board's output
+5. Read Wiegand keypad codes from a local keypad at the gate and publish for historization
+
+More documentation to come...
 
 ## Table of Contents
 - [Introduction](#introduction)

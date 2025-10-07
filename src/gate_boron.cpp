@@ -8,6 +8,7 @@
 // Include Particle Device OS APIs
 #include "Particle.h"
 #include "application.h"
+#include "BeaconScanner.h"
 
 // Let Device OS manage the connection to the Particle Cloud
 SYSTEM_MODE(AUTOMATIC);
@@ -228,6 +229,9 @@ bool WIEGAND::DoWiegandConversion ()
 // END WIEGAND IMPORTED CODE LIBRARY -----------------------------------------------------------------------------------------------------------------
 WIEGAND wg;
 
+//beaconscanner items
+unsigned long scannedTime = 0;
+
 String gatepos = "unknown"; //gate position as text (open/closed/unknown)
 bool prevpos = true; //previous gate position to detect a change
 String command = ""; //used for gate command function
@@ -355,5 +359,10 @@ void loop() {
       //   Serial.print(", Type W");
       //   Serial.println(wg.getWiegandType()); 
       Particle.publish("keypad", String(wg.getCode()), PRIVATE);   
+  }
+  //BLE beacon scan
+  if (Particle.connected() && (millis() - scannedTime) > 10000) {
+    scannedTime = millis();
+    Scanner.scanAndPublish(5, SCAN_KONTAKT | SCAN_IBEACON | SCAN_EDDYSTONE, "gate_beacon", PRIVATE);
   }
 } //endloop

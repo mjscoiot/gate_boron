@@ -230,7 +230,11 @@ bool WIEGAND::DoWiegandConversion ()
 WIEGAND wg;
 
 //beaconscanner items
-unsigned long scannedTime = 0;
+//unsigned long scannedTime = 0;
+int lastpub_pkg = System.millis(); //minute of last publish
+String pkgboxstatus = "Unknown";
+BleAddress pkgboxbeacon("DD:88:00:00:0B:3B", BleAddressType::PUBLIC);
+
 
 String gatepos = "unknown"; //gate position as text (open/closed/unknown)
 bool prevpos = true; //previous gate position to detect a change
@@ -296,8 +300,11 @@ void setup() {
     pinSetDriveStrength(7,DriveStrength::HIGH);
     Particle.function("gate_command", gate_command);
     Particle.function("reset", cloudResetFunction);
-    Particle.publish("hgalarm","0",5,PRIVATE,NO_ACK); //set initial alarm condition
+    Particle.publish("hgalarm","0"); //set initial alarm condition
     wg.begin(D17,D17,D18,D18); //start weigand reading
+    //BLE and Beacon setup
+    BLE.on();
+    Scanner.startContinuous(SCAN_IBEACON);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -322,31 +329,33 @@ void loop() {
   
   if (prevpos!=gatebool) {
     //the position has been changed, send a publish immediately to cloud
-    Particle.publish("hgpos",gatepos,5,PRIVATE,NO_ACK);
-    Particle.publish("Debug", "Gate position changed", 300, PRIVATE);
+    Particle.publish("hgpos",gatepos);
+    //Particle.publish("Debug", "Gate position changed", 300, PRIVATE);
   }
   
   //handling alarm indication
   if (digitalRead(15)==1 && alarmstate==0) {
       //hard shutdown of main board
-      Particle.publish("hgalarm","1",5,PRIVATE,NO_ACK);
+      Particle.publish("hgalarm","1");
   } 
   if (digitalRead(15)==0 && alarmstate==1) {
       //clear alarm
-      Particle.publish("hgalarm","0",5,PRIVATE,NO_ACK);
+      Particle.publish("hgalarm","0");
   }
   
   //scheduled publishes
   if (curtime-lastpub>=1000*60*5) {
     //time based publish (heartbeat)
-    Particle.publish("hgpos",gatepos,5,PRIVATE,NO_ACK);
+    Particle.publish("hgpos",gatepos);
+    Particle.publish("packagebox",pkgboxstatus);
+    pkgboxstatus = "Unknown"; //set to unknown after publish
     lastpub = curtime;
   }
   
     //  Remote Reset Function
   if ((resetFlag) && (millis() - rebootSync >=  rebootDelayMillis)) {
     // do things here  before reset and then push the button
-    Particle.publish("Debug", "Remote Reset Initiated", 300, PRIVATE);
+    Particle.publish("Debug", "Remote Reset Initiated");
     System.reset();
   }
   //wiegand read - pass for records
@@ -358,11 +367,28 @@ void loop() {
       //   Serial.print(wg.getCode());
       //   Serial.print(", Type W");
       //   Serial.println(wg.getWiegandType()); 
-      Particle.publish("keypad", String(wg.getCode()), PRIVATE);   
+      Particle.publish("keypad", String(wg.getCode()));   
   }
   //BLE beacon scan
-  if (Particle.connected() && (millis() - scannedTime) > 10000) {
-    scannedTime = millis();
-    Scanner.scanAndPublish(5, SCAN_KONTAKT | SCAN_IBEACON | SCAN_EDDYSTONE, "gate_beacon", PRIVATE);
-  }
+  Scanner.loop();
+  Vector<iBeaconScan> beacons = Scanner.getiBeacons();
+    while(!beacons.isEmpty())
+    {
+      iBeaconScan beacon = beacons.takeFirst();
+      //Log.info("Address: %s, major: %u, minor: %u", beacon.getAddress().toString().c_str(), beacon.getMajor(), beacon.getMinor());
+      if (strcmp(beacon.getAddress().toString(),pkgboxbeacon.toString()) == 0) {
+        //found the intended beacon
+        if (strcmp(beacon.getUuid(),"7777772E-6B6B-6D63-6E2E-636F6D000002") == 0) {
+          //found the motion UUID
+          pkgboxstatus = "Detected";
+          if (System.millis() - lastpub_pkg >= 1000*60) {
+            Particle.publish("packagebox",pkgboxstatus);
+            lastpub_pkg = System.millis();
+          }
+        } else if (strcmp(beacon.getUuid(),"426C7565-4368-6172-6D42-6561636F6E73") == 0) {
+          //found standard state, wait on scheduled publish interval
+          pkgboxstatus = "Clear";
+        }
+      }
+    } //end while beacons
 } //endloop

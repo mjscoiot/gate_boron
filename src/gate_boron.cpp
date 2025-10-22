@@ -379,6 +379,11 @@ void loop() {
   if (curtime-lastpub>=1000*60*5) {
     //time based publish (heartbeat)
     Particle.publish("hgpos",gatepos);
+    //publish remaining hold time
+    if (held_open == 1) {
+      Particle.publish("hgholdremain",String(((holdend - curtime)/(1000*60))));
+    }
+    //package box status when clear
     Particle.publish("packagebox",pkgboxstatus);
     pkgboxstatus = "Unknown"; //set to unknown after publish
     lastpub = curtime;

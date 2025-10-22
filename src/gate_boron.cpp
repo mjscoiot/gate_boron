@@ -235,7 +235,7 @@ int lastpub_pkg = System.millis(); //minute of last publish
 String pkgboxstatus = "Unknown";
 BleAddress pkgboxbeacon("DD:88:00:00:0B:3B", BleAddressType::PUBLIC);
 
-
+//base gate code items
 String gatepos = "unknown"; //gate position as text (open/closed/unknown)
 bool prevpos = true; //previous gate position to detect a change
 String command = ""; //used for gate command function
@@ -244,7 +244,9 @@ int alarmstate = 0; //state of alarm on last run
 int held_open = 0; //stores whether gate open button is being held down;
 int return_code;
 int curtime; //current time in minutes, min publish for gate position every 5 mins
-int lastpub = System.millis(); //minute of last publish
+int lastpub = System.millis(); //ms of last publish
+int holdend = System.millis(); //ms when to close held gate
+
 //remote reset code
 #define DELAY_BEFORE_REBOOT 2000
 unsigned int rebootDelayMillis = DELAY_BEFORE_REBOOT;
@@ -256,17 +258,39 @@ int gate_command(String rec_command)
 {
   command = rec_command;
   return_code = 9;
+  //regular open
   if (command == "open") {
       digitalWrite(7,HIGH);
       delay(500);
       digitalWrite(7,LOW);
       return_code = 1;
   }
-  if (command == "hold_open") {
+  //hold open commands of different lengths
+  if (command == "hold_open_30m") {
       digitalWrite(7,HIGH);
       held_open = 1;
+      holdend = System.millis() + 30*60*1000;
       return_code = 2;
-  }
+  } //30 minutes
+  if (command == "hold_open_1hr") {
+      digitalWrite(7,HIGH);
+      held_open = 1;
+      holdend = System.millis() + 60*60*1000;
+      return_code = 2;
+  } //1 hour
+  if (command == "hold_open_4hr") {
+      digitalWrite(7,HIGH);
+      held_open = 1;
+      holdend = System.millis() + 4*60*60*1000;
+      return_code = 2;
+  } //4 hours
+  if (command == "hold_open_8hr") {
+      digitalWrite(7,HIGH);
+      held_open = 1;
+      holdend = System.millis() + 8*60*60*1000;
+      return_code = 2;
+  } //8 hours
+  //close immediately
   if (command == "close") {
       if (held_open == 1) {
           digitalWrite(7,LOW);
@@ -315,6 +339,14 @@ void loop() {
   // handling open/closed indication
   prevpos = gatebool;
   
+  //manage held open gate
+  if (held_open == 1 && gatebool) {
+    //gate is in held open mode and gate is open (true)
+    if (curtime >= holdend) {
+      //close da gate!
+      int autoclose = gate_command("close");
+    }
+  }
   //check inputs
   if (digitalRead(16)==1) {
     //pull-up resistor is reading, contact is open; gate is closed

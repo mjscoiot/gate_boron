@@ -295,6 +295,7 @@ int gate_command(String rec_command)
       if (held_open == 1) {
           digitalWrite(7,LOW);
           held_open = 0;
+          Particle.publish("hgholdremain","0");
           delay(1000);
       }
       digitalWrite(5,HIGH);

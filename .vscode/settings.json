@@ -4,8 +4,8 @@
     "files.associations": {
         "*.ino": "cpp"
     },
-    "particle.targetDevice": "gate_boron",
+    "particle.targetDevice": "gate_boron_2",
     "particle.targetPlatform": "boron",
-    "particle.firmwareVersion": "6.3.3",
+    "particle.firmwareVersion": "6.4.1",
     "particle.debugWarningShown": true
 }

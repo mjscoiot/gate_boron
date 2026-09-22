@@ -9,8 +9,6 @@
 #include "Particle.h"
 #include "application.h"
 #include "BeaconScanner.h"
-PRODUCT_VERSION(1);
-PRODUCT_ID(45700);
 
 // Let Device OS manage the connection to the Particle Cloud
 SYSTEM_MODE(AUTOMATIC);
